@@ -6,7 +6,7 @@ Datafeed source library for the BitMEX integration to use with WhenToTrade Chart
 - Copy complete build folder **WTT.BitmexDataFeed** into local installation path c:\wtt\datafeeds\
 - Restart WTT charting app and select new datafeed **Bitmex** from WTT login dropdown
 - Requests to BitMEX API are rate limited to 300 requests per 5 minutes. This counter refills continuously. If you provide no Apikey/Secret, your ratelimit is 150/5minutes.
-- Please create your [API key] via your BitMEX account 
+- Please create your [API key] via your [BitMEX Account] 
 
 ### How to write my own datafeed integration?
 Use this repository as template. Change and connect to the datafeed of your choice. Rename the repository and copy the build output into the WTT installation folder like this repository. There are no limits!
@@ -17,6 +17,7 @@ Use this repository as template. Change and connect to the datafeed of your choi
  - [Charting Platform]: whentotrade website
  - [API Documentation]: API Reference Guide
  - [BitMEX Account]: Register your BitMEX account
+ - [API key]: Create your API key/secret pair
   
   [Book]: <http://a.co/d/i9YlX4c>
   [Charting Platform]: <https://www.whentotrade.com>
