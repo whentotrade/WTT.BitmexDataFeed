@@ -1,5 +1,5 @@
 # BitMEX WhenToTrade Datafeed  
-Datafeed source library for the BitMEX integration to use with WhenToTrade Charting and Cycle analysis platform
+Datafeed source library for the BitMEX crypto trading platform to integrate with WhenToTrade Charting and Cycle analysis platform.
 
 ### Setup
 - Compile library or download pre-build library **WTT.BitmexDataFeed.zip** from [release page] 
