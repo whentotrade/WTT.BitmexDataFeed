@@ -2,14 +2,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using WebSocket4Net;
-using WTT.BitmexDataFeed;
 using WTT.BitmexDataFeed.Properties;
 using WTT.IDataFeed;
 
@@ -17,35 +14,28 @@ namespace WTT.BitmexDataFeed
 {
     public class BitmexDataFeed : IDataFeed.IDataFeed
     {
-        private readonly WebClient _client = new WebClient();
-
         private readonly ctlLogin _loginForm = new ctlLogin();
 
         private readonly Queue<HistoryRequest> _requests = new Queue<HistoryRequest>();
         private readonly List<string> _symbols = new List<string>();
-
-        private bool _isWebClientBusy;
-
-        private readonly coinApiSocketObject coinApiSocketMessage = new coinApiSocketObject();
-
-        private WebSocket coinSocket;
-        private readonly List<string> coinSocketDataType = new List<string>();
 
         private readonly AutoResetEvent m_OpenedEvent = new AutoResetEvent(false);
 
         //string format for dates is:  2018-09-21T00:00:00.0000000Z
         private readonly CultureInfo MyCultureInfo = new CultureInfo("en-EN");
 
-        private string ApiKey { get; set; }
+        private bool _isWebClientBusy;
+        private BitMEXApi bitmex;
+
+        private WebSocket webSocket;
+
+        private string bitmexKey { get; set; }
+
+        private string bitmexSecret { get; set; }
 
         public event EventHandler<MessageEventArgs> OnNewMessage;
         public event EventHandler<DataFeedStatusEventArgs> OnNewStatus;
         public event EventHandler<DataFeedStatusTimeEventArgs> OnNewStatusTime;
-
-        public Control GetLoginControl()
-        {
-            return _loginForm;
-        }
 
         #region Not supported DataFeed methods
 
@@ -66,32 +56,24 @@ namespace WTT.BitmexDataFeed
 
         #endregion
 
-        private class HistoryRequest
-        {
-            public ChartSelection ChartSelection { get; set; }
-            public IHistorySubscriber HistorySubscriber { get; set; }
-        }
-
-        //...CoinAPI WebSocket Message class
-        public class coinApiSocketObject
-        {
-            public string type { get; set; }
-            public string apikey { get; set; }
-            public bool heartbeat { get; set; }
-            public List<string> subscribe_data_type { get; set; }
-            public List<string> subscribe_filter_symbol_id { get; set; }
-        }
-
         #region Login/logout
 
-        public string Name => "CoinApi";
+        public string Name => "Bitmex";
+
+        public Control GetLoginControl()
+        {
+            return _loginForm;
+        }
 
         public bool ValidateLoginParams()
         {
             //Check for valid ApiKey
 
-            ApiKey = _loginForm.ApiKey;
-            Settings.Default.ApiKey = ApiKey;
+            bitmexKey = _loginForm.ApiKey;
+            Settings.Default.ApiKey = bitmexKey;
+
+            bitmexSecret = _loginForm.Secret;
+            Settings.Default.Secret = bitmexSecret;
 
             try
             {
@@ -104,26 +86,18 @@ namespace WTT.BitmexDataFeed
             return true;
         }
 
-
-        //... CoinApi WebSocket Connection Opened
+        //... BitMEX WebSocket connection opened
         private void OnConnected(object sender, EventArgs e)
         {
-            FireConnectionStatus("Connected to CoinAPI streaming socket.");
+            FireConnectionStatus("Connected to BitMEX streaming websocket.");
 
-            //...setup basic hello message
-            coinApiSocketMessage.apikey = ApiKey;
-            coinApiSocketMessage.type = "hello";
-            coinApiSocketMessage.heartbeat = false;
-
-            coinSocketDataType.Add("trade"); //... change to other message type, check coinapi docs
-            coinApiSocketMessage.subscribe_data_type = coinSocketDataType;
+            //... setup basic hello message
+            //... nothing to do for this websocket
 
             m_OpenedEvent.Set();
-
         }
 
-
-        //... CoinApi WebSocket Message Received
+        //... BitMEX WebSocket Message Received
         private void OnMessage(object sender, MessageReceivedEventArgs e)
         {
             //Debug only
@@ -137,31 +111,22 @@ namespace WTT.BitmexDataFeed
 
                 if (unpacked == null) return;
 
+                var table = (string) unpacked.table;
+                var action = (string) unpacked.action;
 
-                var type = (string) unpacked.type;
-                    
-                switch (type)
-                {
-                    case "trade":
+                if (table == "trade" && action == "insert")
+                    foreach (var trade in unpacked.data)
+                    {
                         var priceUpate = new QuoteData();
-                        priceUpate.Symbol = unpacked.symbol_id;
-                        priceUpate.Price = unpacked.price;
-                        var parsedDate = DateTime.Parse((string) unpacked.time_exchange, MyCultureInfo);
-                        priceUpate.TradeTime = parsedDate; 
+                        priceUpate.Symbol = trade.symbol;
+                        priceUpate.Price = trade.price;
+                        var parsedDate = DateTime.Parse((string) trade.timestamp, MyCultureInfo);
+                        priceUpate.TradeTime = parsedDate;
+                        priceUpate.TradedVolume = (long)trade.size;
 
-                        //Update charts
+                        //...update charts
                         BrodcastQuote(priceUpate);
-
-                        //Debug only
-                        //FireConnectionStatus(priceUpate.Symbol + ": " + priceUpate.Price + " Time: " +
-                        //                     priceUpate.TradeTime);
-                        break;
-
-                    case "error":
-                        FireConnectionStatus((string) unpacked.message);
-                        MessageBox.Show((string) unpacked.message, "CoinApi WebSocket Streaming Error");
-                        break;
-                }
+                    }
             }
             catch
             {
@@ -173,39 +138,32 @@ namespace WTT.BitmexDataFeed
 
         public bool Login()
         {
-            //...Set the header CoinApi API key
-            try
-            {
-                _client.Headers.Clear();
-            }
-            catch
-            {
-            }
-
-            _client.Headers.Set("x-coinapi-key", ApiKey);
+            //... setup the web API connection
+            bitmex = new BitMEXApi(bitmexKey, bitmexSecret);
 
             //...Initiate the WebSocket
-            var socketAddress = Settings.Default.WebSocket;
+            var socketAddress = "wss://www.bitmex.com/realtime";
 
-            coinSocket = new WebSocket(socketAddress);
-            coinSocket.Opened += OnConnected;
+            webSocket = new WebSocket(socketAddress);
+            webSocket.Opened += OnConnected;
             //not implemented yet: websocket.Error += new EventHandler<ErrorEventArgs>(websocket_Error);
             //not implemented yet: websocket.Closed += new EventHandler(websocket_Closed);
-            coinSocket.MessageReceived += OnMessage;
-            coinSocket.Open();
+            webSocket.MessageReceived += OnMessage;
+            webSocket.Open();
 
             if (!m_OpenedEvent.WaitOne(10000))
             {
-                FireConnectionStatus("Failed to Opened CoinApi socket session on time.");
+                FireConnectionStatus("Failed to open BitMEX websocket on time.");
                 return false;
             }
+
 
             return true;
         }
 
         public bool Logout()
         {
-            coinSocket?.Close();
+            webSocket?.Close();
 
             FireConnectionStatus("Disconnected from " + Name);
             return true;
@@ -214,6 +172,13 @@ namespace WTT.BitmexDataFeed
         #endregion
 
         #region Realtime-feed
+
+        //...Bitmex WebSocket Message class
+        public class BitmexSocketMessage
+        {
+            public string op { get; set; }
+            public List<string> args { get; set; }
+        }
 
         private readonly List<IDataSubscriber> _subscribers = new List<IDataSubscriber>();
 
@@ -241,7 +206,7 @@ namespace WTT.BitmexDataFeed
         public void Subscribe(string symbol)
         {
             //...failsafe...
-            if (coinSocket == null) return;
+            if (webSocket == null) return;
 
             symbol = symbol.ToUpper();
 
@@ -255,15 +220,16 @@ namespace WTT.BitmexDataFeed
             FireConnectionStatus("Listening to " + symbol);
 
             //...send out the message to listen for data
-            coinApiSocketMessage.subscribe_filter_symbol_id = _symbols;
-            var _coinApiSocketMessage = JsonConvert.SerializeObject(coinApiSocketMessage);
-            coinSocket.Send(_coinApiSocketMessage);
+            var message = new BitmexSocketMessage {op = "subscribe", args = new List<string> {$"trade:{symbol}"}};
+
+            var _webSocketMessage = JsonConvert.SerializeObject(message);
+            webSocket.Send(_webSocketMessage);
         }
 
         public void UnSubscribe(string symbol)
         {
             //failsafe...
-            if (coinSocket == null) return;
+            if (webSocket == null) return;
 
             if (!_symbols.Contains(symbol))
                 return;
@@ -281,16 +247,11 @@ namespace WTT.BitmexDataFeed
 
             FireConnectionStatus("De-Listening to " + symbol);
 
-            //...send out the message to listen for data
+            //...send out the message to de-listen for data 
+            var message = new BitmexSocketMessage {op = "unsubscribe", args = new List<string> {$"trade:{symbol}"}};
+            var _webSocketMessage = JsonConvert.SerializeObject(message);
 
-            //... failsafe, never listen to all incoming messages, keep the last to listen
-            if (_symbols.Count == 0) return;
-
-            coinApiSocketMessage.subscribe_filter_symbol_id = _symbols;
-            var _coinApiSocketMessage = JsonConvert.SerializeObject(coinApiSocketMessage);
-            coinSocket.Send(_coinApiSocketMessage);
-
-
+            webSocket.Send(_webSocketMessage);
         }
 
         private void BrodcastQuote(QuoteData quote)
@@ -304,6 +265,13 @@ namespace WTT.BitmexDataFeed
         #endregion
 
         #region History
+
+        private class HistoryRequest
+        {
+            public ChartSelection ChartSelection { get; set; }
+            public IHistorySubscriber HistorySubscriber { get; set; }
+        }
+
 
         public void GetHistory(ChartSelection selection, IHistorySubscriber subscriber)
         {
@@ -350,23 +318,59 @@ namespace WTT.BitmexDataFeed
             var isFail = false;
             var response = string.Empty;
 
+            var datasets = new List<dynamic>();
 
             try
             {
-                //DEBUG: FireConnectionStatus(FormRequestString(_currentRequest.ChartSelection));
-                response = _client.DownloadString(FormRequestString(_currentRequest.ChartSelection));
+                var paginating = true;
+                var pageSize = 750; //... max page count to receive via one API call
+                var totalBarCounter = 0;
+                var start = 0;
+                var endingTime =
+                    DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-dd"); //ensure we get always the latest current bar
+
+                do
+                {
+                    //DEBUG: FireConnectionStatus(FormRequestString(_currentRequest.ChartSelection));
+                    try
+                    {
+                        var param = FormRequest(_currentRequest.ChartSelection, start, pageSize, endingTime);
+                        var auth = !(string.IsNullOrEmpty(bitmexKey) || string.IsNullOrEmpty(bitmexSecret));
+
+                        response = bitmex.Query("GET", "/trade/bucketed", param, auth);
+
+                        //get the data from the API call
+                        var current_dataset =
+                            JsonConvert.DeserializeObject<dynamic>(response);
+
+                        //check for data
+                        if (((ICollection) current_dataset).Count < pageSize) paginating = false;
+
+                        //add to API return array
+                        datasets.Add(current_dataset);
+                        totalBarCounter += ((ICollection) current_dataset).Count;
+
+                        //...check if we have enough data
+                        if (totalBarCounter >= _currentRequest.ChartSelection.Bars)
+                            paginating = false;
+
+                        start += pageSize;
+                    }
+                    catch (Exception ex)
+                    {
+                        paginating = false;
+                        FireConnectionStatus("Error getting history API data for " +
+                                             _currentRequest.ChartSelection.Symbol);
+                    }
+                } while (paginating);
+
+                FireConnectionStatus("Received bars: " + totalBarCounter);
             }
-            catch (WebException exception)
+            catch (Exception ex)
             {
                 try
                 {
-                    if (exception.Response is HttpWebResponse httpWebResponse)
-                    {
-                        var resp = new StreamReader(httpWebResponse.GetResponseStream()).ReadToEnd();
-                        dynamic obj = JsonConvert.DeserializeObject(resp);
-                        
-                        MessageBox.Show(resp, "CoinApi Error");
-                    }
+                    FireConnectionStatus("Error: " + ex.Message);
                 }
                 catch
                 {
@@ -375,55 +379,83 @@ namespace WTT.BitmexDataFeed
                 isFail = true;
             }
 
-            if (isFail || string.IsNullOrEmpty(response))
+            if (isFail)
                 SendNoHistory(_currentRequest);
             else
-                ProcessResponseAndSend(_currentRequest, response);
+                ProcessResponseAndSend(_currentRequest, datasets);
 
             _isWebClientBusy = false;
 
             ProcessNextRequest();
         }
 
-        //...generate WebAPI GET request format string
-        private string FormRequestString(ChartSelection selection)
+        //...generate API GET request format
+        private Dictionary<string, string> FormRequest(ChartSelection selection, int start, int count,
+            string endingTime)
         {
             //API Endpoint, e.g.
-            //https://rest.coinapi.io/v1/ohlcv/BITSTAMP_SPOT_BTC_EUR/latest?period_id=1DAY&limit=200
+            //https://www.bitmex.com/api/v1/trade/bucketed?binSize=1m&partial=false&count=100&reverse=false&startTime=2018-10-10
 
-            //Set correct endpoint
+            //Set correct binSize
+            //available options: 1m,5m,1h,1d
             var ep = "";
             switch (selection.Periodicity)
             {
                 case EPeriodicity.Hourly:
-                    ep = $"{(int) selection.Interval}HRS";
+                    if ((int) selection.Interval != 1)
+                    {
+                        MessageBox.Show("BitemexApi supports only 1m, 5m, 1h, 1d.");
+                        return null;
+                    }
+
+                    ep = $"{(int) selection.Interval}h";
                     break;
                 case EPeriodicity.Minutely:
-                    ep = $"{(int) selection.Interval}MIN";
+                    if ((int) selection.Interval != 1 && (int) selection.Interval != 5)
+                    {
+                        MessageBox.Show("BitemexApi supports only 1m, 5m, 1h, 1d.");
+                        return null;
+                    }
+
+                    ep = $"{(int) selection.Interval}m";
                     break;
                 case EPeriodicity.Daily:
-                    ep = $"{(int) selection.Interval}DAY";
+                    if ((int) selection.Interval != 1)
+                    {
+                        MessageBox.Show("BitemexApi supports only 1m, 5m, 1h, 1d.");
+                        return null;
+                    }
+
+                    ep = $"{(int) selection.Interval}d";
                     break;
 
                 default:
-                    MessageBox.Show("CoinApi supports only days, hours and minutes");
-                    return "";
+                    MessageBox.Show("BitemexApi supports only 1m, 5m, 1h, 1d.");
+                    return null;
             }
-
-            var requestUrl =
-                $"{Settings.Default.APIUrl}v1/ohlcv/{selection.Symbol}/latest?period_id={ep}&limit={selection.Bars}";
-
-            //... Alternative request with start- and end-dates
-            //var requestUrl = string.Format("/v1/ohlcv/{0}/history?period_id={1}&time_start={2}&time_end={3}", symbolId, periodId, start.ToString(dateFormat), end.ToString(dateFormat));
-
-
-            //string requestUrl = Properties.Settings.Default.APIUrl +
-            //    "v1/ohlcv/" + selection.Symbol+ "/latest?" + "period_id=" + ep + "&limit=" + selection.Bars;  
 
             //debug only
             //FireConnectionStatus("Get: " + requestUrl);
 
-            return requestUrl;
+            //always ensure we have the last active bar
+
+
+            var param = new Dictionary<string, string>();
+            param["symbol"] = selection.Symbol;
+            param["binSize"] = ep; //... available options: 1m,5m,1h,1d
+            param["partial"] =
+                true.ToString(); //... will send in-progress (incomplete) bins for the current time period
+            param["start"] = start.ToString();
+            param["count"] = count.ToString();
+
+            //param["filter"] = "{\"open\":true}";
+            //param["columns"] = "";
+
+            param["reverse"] = true.ToString();
+            //param["startTime"] = "";
+            param["endTime"] = endingTime;
+
+            return param;
         }
 
         private void SendNoHistory(HistoryRequest request)
@@ -432,32 +464,25 @@ namespace WTT.BitmexDataFeed
                 state => request.HistorySubscriber.OnHistoryIncome(request.ChartSelection.Symbol, new List<BarData>()));
         }
 
-        private void ProcessResponseAndSend(HistoryRequest request, string message)
+        private void ProcessResponseAndSend(HistoryRequest request, List<dynamic> datasets)
         {
-            //failsafe...
-            if (string.IsNullOrEmpty(message))
+            var periodicity = request.ChartSelection.Periodicity;
+            var interval = (int) request.ChartSelection.Interval;
+
+            //...failsafe
+            if (datasets == null)
             {
                 SendNoHistory(request);
                 return;
             }
 
-
-            var datasets = new List<dynamic>();
-
-            //get the data from the API call
-            var master_cryptodataset =
-                JsonConvert.DeserializeObject<dynamic>(message);
-
             //check for data
-            if (((ICollection) master_cryptodataset).Count < 4)
+            if (datasets.Count < 1)
             {
                 MessageBox.Show("Error: not enough data");
                 SendNoHistory(request);
                 return;
             }
-
-            //add to API return array
-            datasets.Add(master_cryptodataset);
 
             //... convert API return values into bars
             var retBars = new List<BarData>();
@@ -467,12 +492,34 @@ namespace WTT.BitmexDataFeed
 
                 foreach (var newbar in _retBars)
                 {
+                    //... correct bar time to start-time of bar
+                    //... returned API timestamp for bin is "closing-time" of bar
+                    switch (periodicity)
+                    {
+                        case EPeriodicity.Hourly:
+                            newbar.TradeDate = newbar.TradeDate.AddHours(-1 * interval);
+                            break;
+                        case EPeriodicity.Minutely:
+                            newbar.TradeDate = newbar.TradeDate.AddMinutes(-1 * interval);
+                            break;
+                        case EPeriodicity.Daily:
+                            newbar.TradeDate = newbar.TradeDate.AddDays(-1 * interval);
+                            break;
+                    }
+
                     //... skip overlapping bars based on different requests send
                     if (retBars.Any(b => b.TradeDate == newbar.TradeDate))
                         continue;
 
                     retBars.Add(newbar);
                 }
+            }
+
+            if (retBars.Count < 4)
+            {
+                MessageBox.Show("Error: not enough data");
+                SendNoHistory(request);
+                return;
             }
 
             //...order
@@ -500,19 +547,20 @@ namespace WTT.BitmexDataFeed
 
                 try
                 {
-                    var parsedDate = DateTime.Parse((string) observation.time_period_start, MyCultureInfo);
+                    //info: timestamp is closing of bar time! (=next bar starting time!)
+                    var parsedDate = DateTime.Parse((string) observation.timestamp, MyCultureInfo);
 
                     barData.TradeDate = parsedDate;
 
-                    barData.Open = (double) observation.price_open;
-                    barData.High = (double) observation.price_high;
-                    barData.Low = (double) observation.price_low;
-                    barData.Close = (double) observation.price_close;
-                    barData.Volume = (double) observation.volume_traded;
+                    barData.Open = (double) observation.open;
+                    barData.High = (double) observation.high;
+                    barData.Low = (double) observation.low;
+                    barData.Close = (double) observation.close;
+                    barData.Volume = (double) observation.volume;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Exception in data parsing:" + ex.Message + "--" + observation.time_period_start);
+                    MessageBox.Show("Exception in data parsing:" + ex.Message + "--" + observation.timestamp);
                     continue;
                 }
 

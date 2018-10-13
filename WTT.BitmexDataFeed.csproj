@@ -115,6 +115,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BitMEXAPI.cs" />
     <Compile Include="ctlLogin.cs">
       <SubType>UserControl</SubType>
     </Compile>

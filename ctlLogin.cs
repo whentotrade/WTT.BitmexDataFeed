@@ -14,21 +14,20 @@ namespace WTT.BitmexDataFeed
 
         public string ApiKey => txtApiKey.Text.Trim();
 
+        public string Secret => txtSecret.Text.Trim();
+
         private void ctlLogin_Load(object sender, EventArgs e)
         {
             txtApiKey.Text = Settings.Default.ApiKey;
+
+            txtSecret.Text = Settings.Default.Secret;
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             // Navigate to a URL.
-            Process.Start("https://docs.coinapi.io/");
+            Process.Start("https://www.bitmex.com/app/apiOverview");
         }
 
-        private void formatLabel_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            // Navigate to a URL.
-            Process.Start("https://www.coinapi.io/integration");
-        }
     }
 }

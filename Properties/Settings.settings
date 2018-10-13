@@ -1,17 +1,14 @@
 ﻿<?xml version='1.0' encoding='utf-8'?>
 
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)"
-              GeneratedClassNamespace="WTT.CoinApiDataFeed.Properties" GeneratedClassName="Settings">
+              GeneratedClassNamespace="WTT.BitmexDataFeed.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
     <Setting Name="ApiKey" Type="System.String" Scope="User">
-      <Value Profile="(Default)">USD</Value>
+      <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="WebSocket" Type="System.String" Scope="User">
-      <Value Profile="(Default)">wss://ws.coinapi.io/v1/</Value>
-    </Setting>
-    <Setting Name="APIUrl" Type="System.String" Scope="User">
-      <Value Profile="(Default)">https://rest.coinapi.io/</Value>
+    <Setting Name="Secret" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
     </Setting>
   </Settings>
 </SettingsFile>

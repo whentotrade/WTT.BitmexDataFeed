@@ -25,7 +25,7 @@ namespace WTT.BitmexDataFeed.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("USD")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string ApiKey {
             get {
                 return ((string)(this["ApiKey"]));
@@ -37,25 +37,13 @@ namespace WTT.BitmexDataFeed.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("wss://ws.coinapi.io/v1/")]
-        public string WebSocket {
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string Secret {
             get {
-                return ((string)(this["WebSocket"]));
+                return ((string)(this["Secret"]));
             }
             set {
-                this["WebSocket"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("https://rest.coinapi.io/")]
-        public string APIUrl {
-            get {
-                return ((string)(this["APIUrl"]));
-            }
-            set {
-                this["APIUrl"] = value;
+                this["Secret"] = value;
             }
         }
     }

@@ -32,75 +32,81 @@
             this.txtApiKey = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
-            this.formatLabel = new System.Windows.Forms.LinkLabel();
+            this.txtSecret = new System.Windows.Forms.TextBox();
+            this.lblSecret = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // lblToken
             // 
             this.lblToken.AutoSize = true;
-            this.lblToken.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblToken.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblToken.Location = new System.Drawing.Point(8, 22);
             this.lblToken.Name = "lblToken";
-            this.lblToken.Size = new System.Drawing.Size(56, 17);
+            this.lblToken.Size = new System.Drawing.Size(44, 15);
             this.lblToken.TabIndex = 0;
-            this.lblToken.Text = "Api Key";
+            this.lblToken.Text = "ApiKey";
             // 
             // txtApiKey
             // 
-            this.txtApiKey.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtApiKey.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtApiKey.Location = new System.Drawing.Point(86, 20);
             this.txtApiKey.Margin = new System.Windows.Forms.Padding(2);
             this.txtApiKey.Name = "txtApiKey";
-            this.txtApiKey.Size = new System.Drawing.Size(305, 23);
+            this.txtApiKey.Size = new System.Drawing.Size(305, 21);
             this.txtApiKey.TabIndex = 3;
             // 
             // label1
             // 
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(11, 62);
+            this.label1.Location = new System.Drawing.Point(11, 70);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(380, 36);
+            this.label1.Size = new System.Drawing.Size(380, 28);
             this.label1.TabIndex = 4;
-            this.label1.Text = "This product uses the CoinApi.io API";
+            this.label1.Text = "This product uses the BitMEX API";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // linkLabel1
             // 
             this.linkLabel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.linkLabel1.LinkArea = new System.Windows.Forms.LinkArea(81, 10);
+            this.linkLabel1.LinkArea = new System.Windows.Forms.LinkArea(80, 12);
             this.linkLabel1.LinkColor = System.Drawing.SystemColors.HotTrack;
-            this.linkLabel1.Location = new System.Drawing.Point(14, 136);
+            this.linkLabel1.Location = new System.Drawing.Point(33, 136);
             this.linkLabel1.Name = "linkLabel1";
-            this.linkLabel1.Size = new System.Drawing.Size(380, 36);
+            this.linkLabel1.Size = new System.Drawing.Size(340, 36);
             this.linkLabel1.TabIndex = 5;
             this.linkLabel1.TabStop = true;
-            this.linkLabel1.Text = "By using the WTT CoinApi Crypto integration, you are agreeing to be bound by the " +
-    "CoinApi.io Terms of Use.";
+            this.linkLabel1.Text = "By using the WTT BitMEX integration, you are agreeing to be bound by the BitMEX T" +
+    "erms of Use.";
             this.linkLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.linkLabel1.UseCompatibleTextRendering = true;
             this.linkLabel1.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
             // 
-            // formatLabel
+            // txtSecret
             // 
-            this.formatLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.formatLabel.LinkArea = new System.Windows.Forms.LinkArea(73, 13);
-            this.formatLabel.LinkColor = System.Drawing.SystemColors.HotTrack;
-            this.formatLabel.Location = new System.Drawing.Point(14, 100);
-            this.formatLabel.Name = "formatLabel";
-            this.formatLabel.Size = new System.Drawing.Size(380, 36);
-            this.formatLabel.TabIndex = 6;
-            this.formatLabel.TabStop = true;
-            this.formatLabel.Text = "Symbol format: Exchange_SPOT_Asset_Quote \r\n(e.g. BITSTAMP_SPOT_BTC_USD) [Read mor" +
-    "e...]";
-            this.formatLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.formatLabel.UseCompatibleTextRendering = true;
-            this.formatLabel.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.formatLabel_LinkClicked);
+            this.txtSecret.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtSecret.Location = new System.Drawing.Point(86, 47);
+            this.txtSecret.Margin = new System.Windows.Forms.Padding(2);
+            this.txtSecret.Name = "txtSecret";
+            this.txtSecret.PasswordChar = '*';
+            this.txtSecret.Size = new System.Drawing.Size(305, 21);
+            this.txtSecret.TabIndex = 8;
+            // 
+            // lblSecret
+            // 
+            this.lblSecret.AutoSize = true;
+            this.lblSecret.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblSecret.Location = new System.Drawing.Point(8, 49);
+            this.lblSecret.Name = "lblSecret";
+            this.lblSecret.Size = new System.Drawing.Size(42, 15);
+            this.lblSecret.TabIndex = 7;
+            this.lblSecret.Text = "Secret";
             // 
             // ctlLogin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.formatLabel);
+            this.Controls.Add(this.txtSecret);
+            this.Controls.Add(this.lblSecret);
             this.Controls.Add(this.linkLabel1);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.txtApiKey);
@@ -119,6 +125,7 @@
         private System.Windows.Forms.TextBox txtApiKey;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.LinkLabel linkLabel1;
-        private System.Windows.Forms.LinkLabel formatLabel;
+        private System.Windows.Forms.TextBox txtSecret;
+        private System.Windows.Forms.Label lblSecret;
     }
 }
